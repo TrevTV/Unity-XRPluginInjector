@@ -24,9 +24,9 @@ namespace XRPluginInjector
 
         public override void OnPreInitialization()
         {
-            if (Environment.GetCommandLineArgs().Contains("-vr.disable"))
+            if (Environment.GetCommandLineArgs().Contains("-xr.disable"))
             {
-                MelonLogger.Msg("VR is disabled.");
+                MelonLogger.Msg("XR injection is disabled.");
                 shouldInject = false;
                 IsInjected = shouldInject;
                 return;
