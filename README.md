@@ -11,7 +11,8 @@
 
 ## Installation
 1. Follow the [Automated Installation guide](https://melonwiki.xyz/#/?id=automated-installation) on the MelonLoader wiki page, installing to the game's exe.
-2. Download the latest release from [here](https://github.com/TrevTV/Unity-XRPluginInjector/releases/latest) and open it.
+2. Download the latest release from [here](https://github.com/TrevTV/Unity-XRPluginInjector/releases/latest).
+3. Put the DLL into `<GamePath>\Plugins`
 
 ## Compilation
 1. Open the solution file
