@@ -3,7 +3,10 @@ using MelonLoader;
 using System;
 using System.IO;
 using System.Linq;
+using Unity.XR.OpenVR;
 using UnityEngine;
+using UnityEngine.XR.Management;
+using UnityEngine.XR.OpenXR;
 
 namespace XRPluginInjector
 {
@@ -21,15 +24,22 @@ namespace XRPluginInjector
         public static bool IsInjected { get; private set; }
 
         private bool shouldInject = true;
+        private bool useOpenVR = false;
 
         public override void OnPreInitialization()
         {
-            if (Environment.GetCommandLineArgs().Contains("-xr.disable"))
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Contains("-xr.disable"))
             {
                 MelonLogger.Msg("XR injection is disabled.");
                 shouldInject = false;
                 IsInjected = shouldInject;
                 return;
+            }
+
+            if (args.Contains("-xr.loadopenvr"))
+            {
+                useOpenVR = true;
             }
 
             IsInjected = true;
@@ -42,8 +52,12 @@ namespace XRPluginInjector
                     CopyResourceToPath(res, Path.Combine(MelonUtils.GetGameDataDirectory(), "Managed", fileName.Replace("Managed.", "")));
                 else if (fileName.StartsWith("Plugins."))
                     CopyResourceToPath(res, Path.Combine(MelonUtils.GetGameDataDirectory(), "Plugins", "x86_64", fileName.Replace("Plugins.x86_64.", "")));
-                else if (fileName.StartsWith("UnitySubsystems."))
+                else if (fileName.StartsWith("UnitySubsystems.UnityOpenXR."))
                     CopyResourceToPath(res, Path.Combine(MelonUtils.GetGameDataDirectory(), "UnitySubsystems", "UnityOpenXR", fileName.Replace("UnitySubsystems.UnityOpenXR.", "")));
+                else if (fileName.StartsWith("UnitySubsystems.XRSDKOpenVR."))
+                    CopyResourceToPath(res, Path.Combine(MelonUtils.GetGameDataDirectory(), "UnitySubsystems", "XRSDKOpenVR", fileName.Replace("UnitySubsystems.XRSDKOpenVR.", "")));
+                else if (fileName.StartsWith("StreamingAssets."))
+                    CopyResourceToPath(res, Path.Combine(MelonUtils.GetGameDataDirectory(), "StreamingAssets", "SteamVR", fileName.Replace("StreamingAssets.SteamVR.", "")));
             }
         }
 
@@ -52,13 +66,24 @@ namespace XRPluginInjector
             if (!shouldInject)
                 return;
 
-            foreach (var xrManager in GetAssetBundle("xrmanager").LoadAllAssets())
-                MelonLogger.Msg($"Loaded xrManager: {xrManager.name}");
+            var generalSettings = ScriptableObject.CreateInstance<XRGeneralSettings>();
+            var managerSetings = ScriptableObject.CreateInstance<XRManagerSettings>();
+            generalSettings.Manager = managerSetings;
 
-            // Using AppDomain and Reflection to prevent any dependency warnings from MelonLoader
-            var unityXrAsm = AppDomain.CurrentDomain.GetAssemblies().First(a => a.FullName.StartsWith("Unity.XR.Management"));
-            unityXrAsm.GetType("UnityEngine.XR.Management.XRGeneralSettings").GetMethod("AttemptInitializeXRSDKOnLoad", AccessTools.all).Invoke(null, null);
-            unityXrAsm.GetType("UnityEngine.XR.Management.XRGeneralSettings").GetMethod("AttemptStartXRSDKOnBeforeSplashScreen", AccessTools.all).Invoke(null, null);
+            XRLoader loader = null;
+            if (useOpenVR)
+                loader = ScriptableObject.CreateInstance<OpenVRLoader>();
+            else
+                loader = ScriptableObject.CreateInstance<OpenXRLoader>();
+
+            //typeof(XRManagerSettings).GetField("m_RegisteredLoaders", AccessTools.all).SetValue(managerSetings, new System.Collections.Generic.HashSet<XRLoader>() { loader });
+            managerSetings.loaders.Clear();
+            managerSetings.loaders.Add(loader);
+
+            managerSetings.InitializeLoaderSync();
+
+            typeof(XRGeneralSettings).GetMethod("AttemptInitializeXRSDKOnLoad", AccessTools.all).Invoke(null, null);
+            typeof(XRGeneralSettings).GetMethod("AttemptStartXRSDKOnBeforeSplashScreen", AccessTools.all).Invoke(null, null);
         }
 
         public AssetBundle GetAssetBundle(string name)
