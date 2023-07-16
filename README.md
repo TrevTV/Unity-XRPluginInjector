@@ -1,4 +1,4 @@
-# Unity XR Plugin Injector [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/S6S244CYE)
+# Unity XR Plugin Injector
 
 [![forthebadge](https://forthebadge.com/images/badges/works-on-my-machine.svg)](https://forthebadge.com)
 
